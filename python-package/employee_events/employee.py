@@ -1,66 +1,56 @@
 # Import the QueryBase class
 from .query_base import QueryBase
 
-# Import dependencies needed for sql execution
-from .sql_execution import QueryMixin
+# Import pandas
+import pandas as pd
 
 
-# Define a subclass of QueryBase
-# called Employee
+# Define a subclass of QueryBase called Employee
 class Employee(QueryBase):
 
-    # Set the class attribute `name`
-    # to the string "employee"
+    # Set class attribute
     name = "employee"
 
 
-    # Define a method called `names`
-    # that receives no arguments
-    # This method should return a list of tuples
-    # from an sql execution
+    # Method 1: Return all employee names and ids
     def names(self):
 
-        # Query 3
         query = """
-        SELECT first_name || ' ' || last_name AS full_name,
-               employee_id
-        FROM employee
-        ORDER BY employee_id
-        """
+                SELECT first_name || ' ' || last_name AS full_name,
+                       employee_id
+                FROM employee
+                """
 
-        return self.query(query)
+        return self.execute_query(query)
 
 
-    # Define a method called `username`
-    # that receives an `id` argument
+    # Method 2: Return full name for specific employee
     def username(self, id):
 
-        # Query 4
         query = f"""
-        SELECT first_name || ' ' || last_name AS full_name
-        FROM employee
-        WHERE employee_id = {id}
-        """
+                SELECT first_name || ' ' || last_name AS full_name
+                FROM employee
+                WHERE employee_id = {id}
+                """
 
-        return self.query(query)
+        return self.execute_query(query)
 
 
-    # Below is method with an SQL query
-    # This SQL query generates the data needed for
-    # the machine learning model.
-    # Without editing the query, alter this method
-    # so when it is called, a pandas dataframe
-    # is returns containing the execution of
-    # the sql query
+    # Method 3: Return ML model dataset as pandas DataFrame
     def model_data(self, id):
 
         query = f"""
-                    SELECT SUM(positive_events) positive_events
-                         , SUM(negative_events) negative_events
+                    SELECT SUM(positive_events) positive_events,
+                           SUM(negative_events) negative_events
                     FROM {self.name}
                     JOIN employee_events
                         USING({self.name}_id)
                     WHERE {self.name}.{self.name}_id = {id}
                 """
 
-        return self.pandas_query(query)
+        data = self.execute_query(query)
+
+        # Convert to DataFrame
+        df = pd.DataFrame(data, columns=["positive_events", "negative_events"])
+
+        return df
