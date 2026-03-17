@@ -42,6 +42,9 @@ class QueryMixin:
         connection.close()
 
         return result
+    
+    def execute_query(self, query):
+        return self.query(query)
 
 
 # Leave this code unchanged

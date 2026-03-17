@@ -11,7 +11,7 @@ from utils import load_model
 
 """
 Below, we import the parent classes
-you will use for subclassing
+we will use for subclassing
 """
 from base_components import (
     Dropdown,
@@ -30,13 +30,13 @@ class ReportDropdown(Dropdown):
 
     def build_component(self, entity_id, model):
 
-        # Set label
+        # Setting label
         label = model.name.capitalize()
 
         # Get options
         data = model.names()
 
-        # Build dropdown manually
+        # Building dropdown manually
         options = []
 
         for text, value in data:
@@ -60,8 +60,13 @@ class Header(BaseComponent):
 
     def build_component(self, entity_id, model):
 
-        return H1(f"{model.name.capitalize()} Performance")
+        title = (
+            "Employee Performance"
+            if model.name == "employee"
+            else "Team Performance"
+        )
 
+        return H1(title)
 
 # Create a subclass of base_components/MatplotlibViz
 # called `LineChart`
@@ -88,9 +93,10 @@ class LineChart(MatplotlibViz):
 
         fig, ax = plt.subplots()
 
-        df.plot(ax=ax)
+        df.plot(ax=ax, linewidth=2)
+        ax.grid(True, linestyle="--", alpha=0.5)
 
-        self.set_axis_styling(ax, bordercolor="black", fontcolor="black")
+        self.set_axis_styling(ax, bordercolor="white", fontcolor="white")
 
         ax.set_title("Event Counts Over Time", fontsize=20)
         ax.set_xlabel("Date")
@@ -125,11 +131,19 @@ class BarChart(MatplotlibViz):
 
         fig, ax = plt.subplots()
 
-        ax.barh([""], [pred])
+        # Color logic
+        if pred < 0.3:
+            color = "green"
+        elif pred < 0.7:
+            color = "orange"
+        else:
+            color = "red"
+
+        ax.barh(["Risk"], [pred], color=color)
         ax.set_xlim(0, 1)
         ax.set_title("Predicted Recruitment Risk", fontsize=20)
 
-        self.set_axis_styling(ax, bordercolor="black", fontcolor="black")
+        self.set_axis_styling(ax, bordercolor="white", fontcolor="white")
 
         return fig
 
@@ -143,7 +157,7 @@ class Visualizations(CombinedComponent):
         BarChart()
     ]
 
-    outer_div_type = Div(cls="grid")
+    outer_div_type = Div(cls="charts")
 
 
 # Create a subclass of base_components/DataTable
@@ -165,7 +179,7 @@ class DashboardFilters(FormGroup):
 
         selected = model.name.capitalize()
 
-        # ✅ MANUAL RADIO (bulletproof)
+        # manual radio button
         radio = Div(
             Label(
                 Input(
@@ -206,18 +220,32 @@ class Report(CombinedComponent):
 
     def call_children(self, entity_id, model):
 
+        # define children properly
         self.children = [
             Header(),
-            DashboardFilters(model),  
+            DashboardFilters(model),
             Visualizations(),
             NotesTable()
         ]
 
-        return super().call_children(entity_id, model)
+        # render children
+        components = super().call_children(entity_id, model)
 
+        # wrap layout
+        return Div(
+            H1("Employee Performance Dashboard", cls="title"),
+
+            Div(components[1], cls="card filters"),   # filters
+            Div(components[2], cls="card charts"),    # charts
+            Div(components[3], cls="card table"),     # table
+
+            cls="container"
+        )
 
 # Initialize a fasthtml app
-app = FastHTML()
+app = FastHTML(
+    hdrs=(Link(rel="stylesheet", href="/assets/report.css"),)
+)
 
 
 # Initialize the `Report` class
@@ -239,13 +267,23 @@ def employee_view(id: str, r):
 
     return report(int(id), Employee())
 
-
+# Team route
 @app.get("/team/{id}")
 def team_view(id: str, r):
 
     profile_type = r.query_params.get("profile_type", "Team")
 
     return report(int(id), Team())
+
+from pathlib import Path
+from fasthtml.common import Response
+
+@app.get("/assets/report.css")
+def serve_css():
+    css_path = Path(__file__).resolve().parents[1] / "assets" / "report.css"
+    
+    with open(css_path, "r") as f:
+        return Response(f.read(), media_type="text/css")
 
 
 # Keep the below code unchanged!

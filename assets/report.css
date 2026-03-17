@@ -1,5 +1,135 @@
+/* =========================
+   GLOBAL DARK THEME
+========================= */
+
 body {
-    margin-top: 5%;
-    margin-left: 25%;
-    height: 100%;
+    background-color: #0f172a !important;
+    color: #e5e7eb !important;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* =========================
+   CONTAINER
+========================= */
+
+.container {
+    max-width: 1400px;
+    margin: auto;
+    padding: 20px;
+}
+
+/* =========================
+   TITLE
+========================= */
+
+.title {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #f9fafb;
+}
+
+/* =========================
+   CARD LAYOUT
+========================= */
+
+.card {
+    background: #1e293b !important;
+    padding: 16px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* =========================
+   FILTERS (RADIO + DROPDOWN)
+========================= */
+
+.filters {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Radio buttons */
+
+input[type="radio"] {
+    margin-right: 6px;
+    accent-color: #38bdf8;
+}
+
+/* Labels */
+
+label {
+    margin-right: 10px;
+    font-size: 14px;
+}
+
+/* Dropdown */
+
+select {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #475569;
+    background-color: #0f172a;
+    color: #e5e7eb;
+}
+
+/* =========================
+   CHARTS (HORIZONTAL FIX)
+========================= */
+
+.charts {
+    display: flex !important;   /* force horizontal */
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.charts > * {
+    flex-wrap: wrap; 
+}
+
+/* =========================
+   TABLE
+========================= */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #e5e7eb;
+}
+
+table th {
+    background-color: #334155;
+    padding: 10px;
+    text-align: left;
+}
+
+table td {
+    padding: 8px;
+    border-bottom: 1px solid #475569;
+}
+
+/* Hover effect */
+
+table tr:hover {
+    background-color: #1e293b;
+}
+
+/* =========================
+   SCROLL (optional polish)
+========================= */
+
+::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 10px;
 }
