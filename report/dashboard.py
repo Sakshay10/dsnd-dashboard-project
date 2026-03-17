@@ -30,15 +30,29 @@ class ReportDropdown(Dropdown):
 
     def build_component(self, entity_id, model):
 
-        # Set label to model name
-        self.label = model.name.capitalize()
+        # Set label
+        label = model.name.capitalize()
 
-        return super().build_component(entity_id, model)
+        # Get options
+        data = model.names()
 
-    def component_data(self, entity_id, model):
+        # Build dropdown manually
+        options = []
 
-        return model.names()
+        for text, value in data:
+            if value == entity_id:
+                options.append(Option(text, value=value, selected=True))
+            else:
+                options.append(Option(text, value=value))
 
+        return Div(
+            Label(label),
+            Select(
+                *options,
+                name=self.name,
+                id=self.id
+            )
+        )
 
 # Create a subclass of base_components/BaseComponent
 # called `Header`
@@ -56,6 +70,11 @@ class LineChart(MatplotlibViz):
     def visualization(self, entity_id, model):
 
         df = model.event_counts(entity_id)
+
+        if df is None or df.empty:
+            fig, ax = plt.subplots()
+            ax.text(0.5, 0.5, "No data available", ha='center')
+            return fig
 
         df = df.fillna(0)
 
@@ -89,6 +108,11 @@ class BarChart(MatplotlibViz):
     def visualization(self, entity_id, model):
 
         df = model.model_data(entity_id)
+
+        if df is None or df.empty:
+            fig, ax = plt.subplots()
+            ax.text(0.5, 0.5, "No data available", ha='center')
+            return fig
 
         preds = self.predictor.predict_proba(df)
 
@@ -137,30 +161,59 @@ class DashboardFilters(FormGroup):
     action = "/update_data"
     method = "POST"
 
-    children = [
-        Radio(
-            values=["Employee", "Team"],
-            name="profile_type",
-            hx_get="/update_dropdown",
-            hx_target="#selector"
-        ),
-        ReportDropdown(
-            id="selector",
-            name="user-selection"
+    def __init__(self, model):
+
+        selected = model.name.capitalize()
+
+        # ✅ MANUAL RADIO (bulletproof)
+        radio = Div(
+            Label(
+                Input(
+                    type="radio",
+                    name="profile_type",
+                    value="Employee",
+                    checked=(selected == "Employee"),
+                    hx_get="/update_dropdown",
+                    hx_target="#selector"
+                ),
+                " Employee"
+            ),
+            Label(
+                Input(
+                    type="radio",
+                    name="profile_type",
+                    value="Team",
+                    checked=(selected == "Team"),
+                    hx_get="/update_dropdown",
+                    hx_target="#selector"
+                ),
+                " Team"
+            )
         )
-    ]
+
+        self.children = [
+            radio,
+            ReportDropdown(
+                id="selector",
+                name="user-selection"
+            )
+        ]
 
 
 # Create a subclass of CombinedComponents
 # called `Report`
 class Report(CombinedComponent):
 
-    children = [
-        Header(),
-        DashboardFilters(),
-        Visualizations(),
-        NotesTable()
-    ]
+    def call_children(self, entity_id, model):
+
+        self.children = [
+            Header(),
+            DashboardFilters(model),  
+            Visualizations(),
+            NotesTable()
+        ]
+
+        return super().call_children(entity_id, model)
 
 
 # Initialize a fasthtml app
@@ -180,14 +233,17 @@ def index():
 
 # Employee route
 @app.get("/employee/{id}")
-def employee_view(id: str):
+def employee_view(id: str, r):
+
+    profile_type = r.query_params.get("profile_type", "Employee")
 
     return report(int(id), Employee())
 
 
-# Team route
 @app.get("/team/{id}")
-def team_view(id: str):
+def team_view(id: str, r):
+
+    profile_type = r.query_params.get("profile_type", "Team")
 
     return report(int(id), Team())
 
@@ -195,10 +251,12 @@ def team_view(id: str):
 # Keep the below code unchanged!
 @app.get('/update_dropdown{r}')
 def update_dropdown(r):
-    dropdown = DashboardFilters.children[1]
-    print('PARAM', r.query_params['profile_type'])
+
+    dropdown = ReportDropdown(id="selector", name="user-selection")
+
     if r.query_params['profile_type'] == 'Team':
         return dropdown(None, Team())
+
     elif r.query_params['profile_type'] == 'Employee':
         return dropdown(None, Employee())
 
@@ -206,13 +264,17 @@ def update_dropdown(r):
 @app.post('/update_data')
 async def update_data(r):
     from fasthtml.common import RedirectResponse
+
     data = await r.form()
+
     profile_type = data._dict['profile_type']
     id = data._dict['user-selection']
+
     if profile_type == 'Employee':
-        return RedirectResponse(f"/employee/{id}", status_code=303)
+        return RedirectResponse(f"/employee/{id}?profile_type=Employee", status_code=303)
+
     elif profile_type == 'Team':
-        return RedirectResponse(f"/team/{id}", status_code=303)
+        return RedirectResponse(f"/team/{id}?profile_type=Team", status_code=303)
 
 
 serve()
